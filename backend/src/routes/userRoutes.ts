@@ -1,13 +1,10 @@
 import { Router } from 'express';
 import { userController } from '../controllers/userController';
-import { authenticate, authorize } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { createUserSchema, updateUserSchema } from '../validators/userValidator';
 import { auditLog } from '../middlewares/auditLog';
 
 export const userRoutes = Router();
-
-userRoutes.use(authenticate);
 
 /**
  * @swagger
@@ -63,7 +60,6 @@ userRoutes.get('/:id', userController.findById);
  */
 userRoutes.post(
   '/',
-  authorize('technician', 'professor'),
   validate(createUserSchema),
   auditLog('User', 'INSERT'),
   userController.create
@@ -80,7 +76,6 @@ userRoutes.post(
  */
 userRoutes.put(
   '/:id',
-  authorize('technician', 'professor'),
   validate(updateUserSchema),
   auditLog('User', 'UPDATE'),
   userController.update
@@ -97,7 +92,6 @@ userRoutes.put(
  */
 userRoutes.delete(
   '/:id',
-  authorize('technician'),
   auditLog('User', 'DELETE'),
   userController.delete
 );

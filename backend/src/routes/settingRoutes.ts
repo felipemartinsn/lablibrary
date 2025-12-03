@@ -1,13 +1,10 @@
 import { Router } from 'express';
 import { settingController } from '../controllers/settingController';
-import { authenticate, authorize } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 
 export const settingRoutes = Router();
 
-settingRoutes.use(authenticate);
-settingRoutes.use(authorize('technician'));
-
+// Rotas públicas para demonstração
 settingRoutes.get('/', settingController.get);
 
 settingRoutes.put(

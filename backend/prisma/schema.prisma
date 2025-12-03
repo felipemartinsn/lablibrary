@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  registrationNumber String   @unique @map("registration_number")
+  userType          String    @map("user_type") // student|professor|technician
+  labLink           String?   @map("lab_link")
+  fineCount         Int       @default(0) @map("fine_count")
+  active            Boolean   @default(true)
+  blockedUntil      DateTime? @map("blocked_until")
+  password          String
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  loans             Loan[]
+  fines             Fine[]
+  reservations      Reservation[]
+  auditLogs         AuditLog[]
+  loansAsStaff      Loan[]    @relation("ResponsibleStaff")
+
+  @@map("users")
+}
+
+model Material {
+  id                Int       @id @default(autoincrement())
+  internalCode      String    @unique @map("internal_code")
+  title             String
+  thematicArea      String    @map("thematic_area")
+  materialType      String    @map("material_type") // book|handout|article|equipment
+  quantityTotal     Int       @map("quantity_total")
+  quantityAvailable Int       @map("quantity_available")
+  conditionStatus   String    @map("condition_status") // new|good|damaged|maintenance|lost
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  loans             Loan[]
+  reservations      Reservation[]
+
+  @@map("materials")
+}
+
+model Loan {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
+  materialId       Int       @map("material_id")
+  responsibleStaffId Int     @map("responsible_staff_id")
+  loanDate         DateTime  @default(now()) @map("loan_date")
+  dueDate          DateTime  @map("due_date")
+  returnDate       DateTime? @map("return_date")
+  status           String    // active|returned|overdue
+  returnCondition  String?   @map("return_condition")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user             User      @relation(fields: [userId], references: [id])
+  material         Material  @relation(fields: [materialId], references: [id])
+  responsibleStaff User      @relation("ResponsibleStaff", fields: [responsibleStaffId], references: [id])
+  fines            Fine[]
+
+  @@map("loans")
+}
+
+model Fine {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
+  loanId            Int?      @map("loan_id")
+  reason            String    // late_return|damaged_material|rule_violation
+  description       String?
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user              User      @relation(fields: [userId], references: [id])
+  loan              Loan?     @relation(fields: [loanId], references: [id])
+
+  @@map("fines")
+}
+
+model Reservation {
+  id                Int       @id @default(autoincrement())
+  materialId       Int       @map("material_id")
+  userId           Int       @map("user_id")
+  priorityLevel    Int       @default(0) @map("priority_level")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  material         Material  @relation(fields: [materialId], references: [id])
+  user             User      @relation(fields: [userId], references: [id])
+
+  @@map("reservations")
+}
+
+model Setting {
+  id                Int       @id @default(autoincrement())
+  maxFinesLimit     Int       @map("max_fines_limit")
+  blockDurationDays Int       @map("block_duration_days")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model AuditLog {
+  id                Int       @id @default(autoincrement())
+  userId            Int?      @map("user_id")
+  entity            String
+  actionType        String    @map("action_type") // INSERT|UPDATE|DELETE
+  timestamp         DateTime  @default(now())
+  details           String    @db.Text // JSON string
+
+  user              User?     @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
